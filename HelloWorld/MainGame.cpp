@@ -352,6 +352,7 @@ void UpdateAgent8()
             obj_agent8.acceleration = { 0, -0.5f };
             Play::SetSprite(obj_agent8, "agent8_fall", 0);
             obj_agent8.rotation = 0;
+
             if (obj_agent8.pos.y <= DISPLAY_HEIGHT * 0.66f)
             {
                 gameState.agentState = STATE_PLAY;
@@ -409,16 +410,24 @@ void ShowGameOver()
 
     if (Play::KeyPressed(Play::KEY_R) == true)
     {
+        gameState.mode = MODE_PLAYING;
         gameState.agentState = STATE_APPEAR;
-        obj_agent8.pos = { 115, 600 };
-        obj_agent8.velocity = { 0, 0 };
-        obj_agent8.frame = 0;
-        // Play::StartAudioLoop("music");
         gameState.score = 0;
 
-        for (int id_obj : Play::CollectGameObjectIDsByType(TYPE_TOOL))
+        // Destroy tools, coins and lasers
+        std::vector<int> vObjectsDestroy;
+
+        std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
+        std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
+        std::vector<int> vLasers = Play::CollectGameObjectIDsByType(TYPE_LASER);
+
+        vObjectsDestroy.insert(vObjectsDestroy.end(), vTools.begin(), vTools.end());
+        vObjectsDestroy.insert(vObjectsDestroy.end(), vCoins.begin(), vCoins.end());
+        vObjectsDestroy.insert(vObjectsDestroy.end(), vLasers.begin(), vLasers.end());
+
+        for (int id : vObjectsDestroy)
         {
-            Play::GetGameObject(id_obj).type = TYPE_DESTROYED;
+            Play::DestroyGameObject(id);
         }
     }
 }
