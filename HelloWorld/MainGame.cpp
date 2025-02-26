@@ -14,10 +14,18 @@ enum Agent8State
     STATE_DEAD,
 };
 
+enum GameMode
+{
+    MODE_MENU,
+    MODE_PLAYING,
+    MODE_GAMEOVER,
+};
+
 struct GameState
 {
 	int score{ 0 };
     Agent8State agentState{ STATE_APPEAR };
+    GameMode mode{ MODE_MENU };
 };
 
 GameState gameState;
@@ -42,6 +50,8 @@ void UpdateCoinsAndStars();
 void UpdateLasers();
 void UpdateDestroyed();
 void UpdateAgent8();
+void ShowMainMenu();
+void ShowGameOver();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -60,16 +70,28 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
 bool MainGameUpdate(float elapsedTime)
 {
     Play::DrawBackground();
-    UpdateAgent8();
-    UpdateFan();
-    UpdateTools();
-    UpdateCoinsAndStars();
-    UpdateLasers();
-    UpdateDestroyed();
-    Play::DrawFontText("32px", "ARROW KEYS TO MOVE UP AND DOWN AND SPACE TO FIRE",
-                       { DISPLAY_WIDTH / 2, 40 }, Play::CENTRE);
-    Play::DrawFontText("72px", "SCORE: " + std::to_string(gameState.score),
-                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+    switch (gameState.mode)
+    {
+        case MODE_MENU:
+            ShowMainMenu();
+            break;
+        case MODE_PLAYING:
+            UpdateAgent8();
+            UpdateFan();
+            UpdateTools();
+            UpdateCoinsAndStars();
+            UpdateLasers();
+            UpdateDestroyed();
+            Play::DrawFontText("32px", "ARROW KEYS TO MOVE UP AND DOWN AND SPACE TO FIRE",
+                               { DISPLAY_WIDTH / 2, 40 }, Play::CENTRE);
+            Play::DrawFontText("72px", "SCORE: " + std::to_string(gameState.score),
+                               { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+            break;
+        case MODE_GAMEOVER:
+            ShowGameOver();
+    }
+
     Play::PresentDrawingBuffer();
     return Play::KeyDown(Play::KEY_ESCAPE);
 }
@@ -351,19 +373,10 @@ void UpdateAgent8()
         case STATE_DEAD:
             obj_agent8.acceleration = { -0.3f , 0.5f };
             obj_agent8.rotation += 0.25f;
-            if (Play::KeyPressed(Play::KEY_SPACE) == true)
+            
+            if (Play::IsAnimationComplete(obj_agent8))
             {
-                gameState.agentState = STATE_APPEAR;
-                obj_agent8.pos = { 115, 600 };
-                obj_agent8.velocity = { 0, 0 };
-                obj_agent8.frame = 0;
-                // Play::StartAudioLoop("music");
-                gameState.score = 0;
-
-                for (int id_obj : Play::CollectGameObjectIDsByType(TYPE_TOOL))
-                {
-                    Play::GetGameObject(id_obj).type = TYPE_DESTROYED;
-                }
+                gameState.mode = MODE_GAMEOVER;
             }
             break;
 
@@ -378,4 +391,34 @@ void UpdateAgent8()
 
     Play::DrawLine({ obj_agent8.pos.x, 720 }, obj_agent8.pos, Play::cWhite);
     Play::DrawObjectRotated(obj_agent8);
+}
+
+void ShowMainMenu()
+{
+    if (Play::KeyPressed(Play::KEY_ENTER))
+    {
+        gameState.mode = MODE_PLAYING;
+        gameState.agentState = STATE_APPEAR;
+        gameState.score = 0;
+    }
+}
+
+void ShowGameOver()
+{
+    GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
+
+    if (Play::KeyPressed(Play::KEY_R) == true)
+    {
+        gameState.agentState = STATE_APPEAR;
+        obj_agent8.pos = { 115, 600 };
+        obj_agent8.velocity = { 0, 0 };
+        obj_agent8.frame = 0;
+        // Play::StartAudioLoop("music");
+        gameState.score = 0;
+
+        for (int id_obj : Play::CollectGameObjectIDsByType(TYPE_TOOL))
+        {
+            Play::GetGameObject(id_obj).type = TYPE_DESTROYED;
+        }
+    }
 }
