@@ -413,14 +413,18 @@ void ShowGameOver()
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 170 }, Play::CENTRE);
 
     Play::DrawFontText("32px", "\"R\" restart",
-                       { DISPLAY_WIDTH * 3/4, 40 }, Play::CENTRE);
+                       { DISPLAY_WIDTH * 7/8, 40 }, Play::CENTRE);
 
     Play::DrawFontText("32px", "\"L\" leaderboard",
-                       { DISPLAY_WIDTH / 2, 40 }, Play::CENTRE);
+                       { DISPLAY_WIDTH * 5/8, 40 }, Play::CENTRE);
 
-    Play::DrawFontText("32px", "\"ESC\" quit",
+    Play::DrawFontText("32px", "\"M\" Main",
 
-                       { DISPLAY_WIDTH * 1/4, 40 }, Play::CENTRE);
+                       { DISPLAY_WIDTH * 3/8, 40 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "\"ESC\" quit game",
+
+                       { DISPLAY_WIDTH * 1/8, 40 }, Play::CENTRE);
 
     GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
 
@@ -447,6 +451,11 @@ void ShowGameOver()
         vObjectsDestroy.insert(vObjectsDestroy.end(), vLasers.begin(), vLasers.end());
 
         for (int id : vObjectsDestroy) { Play::DestroyGameObject(id); }
+    }
+
+    if (Play::KeyPressed(Play::KEY_M) == true)
+    {
+        gameState.mode = MODE_MENU;
     }
 }
 
