@@ -16,6 +16,7 @@ enum Agent8State
 
 enum GameMode
 {
+    MODE_SPLASH,
     MODE_MENU,
     MODE_PLAYING,
     MODE_GAMEOVER,
@@ -25,7 +26,7 @@ struct GameState
 {
 	int score{ 0 };
     Agent8State agentState{ STATE_APPEAR };
-    GameMode mode{ MODE_MENU };
+    GameMode mode{ MODE_SPLASH };
 };
 
 GameState gameState;
@@ -50,6 +51,7 @@ void UpdateCoinsAndStars();
 void UpdateLasers();
 void UpdateDestroyed();
 void UpdateAgent8();
+void ShowSplashScreen();
 void ShowMainMenu();
 void ShowGameOver();
 void TriggerGameStart();
@@ -74,9 +76,14 @@ bool MainGameUpdate(float elapsedTime)
 
     switch (gameState.mode)
     {
+        case MODE_SPLASH:
+            ShowSplashScreen();
+            break;
+
         case MODE_MENU:
             ShowMainMenu();
             break;
+
         case MODE_PLAYING:
             UpdateAgent8();
             UpdateFan();
@@ -87,6 +94,7 @@ bool MainGameUpdate(float elapsedTime)
             Play::DrawFontText("72px", "SCORE: " + std::to_string(gameState.score),
                                { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
             break;
+
         case MODE_GAMEOVER:
             ShowGameOver();
     }
@@ -384,9 +392,29 @@ void UpdateAgent8()
     Play::DrawObjectRotated(obj_agent8);
 }
 
+void ShowSplashScreen()
+{
+    Play::DrawFontText("72px", "Welcome to Spydroid",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "A game developed by Michael Lourens CGSI Student Assignment 2",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 200 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Game being developed using the PlayBuffer Framework for C++ developed by Sumo Digital Ltd.",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 250 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Press the \"M\" key to continue.....",
+                       { DISPLAY_WIDTH / 2, 40 }, Play::CENTRE);
+
+    if (Play::KeyPressed(Play::KEY_M) == true)
+    {
+        gameState.mode = MODE_MENU;
+    }
+}
+
 void ShowMainMenu()
 {
-    Play::DrawFontText("72px", "Welcome to Spider Spy",
+    Play::DrawFontText("72px", "Welcome to Spydroid",
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
 
     Play::DrawFontText("32px", "ARROW KEYS TO MOVE UP AND DOWN AND \"SPACE\" TO FIRE",
@@ -401,7 +429,10 @@ void ShowMainMenu()
     Play::DrawFontText("32px", "Press \"ESC\" to quit the game",
                        { 40, 200 }, Play::LEFT);
 
-    if (Play::KeyPressed(Play::KEY_ENTER)) { TriggerGameStart(); }
+    if (Play::KeyPressed(Play::KEY_ENTER)) 
+    { 
+        TriggerGameStart();
+    }
 }
 
 void ShowGameOver()
