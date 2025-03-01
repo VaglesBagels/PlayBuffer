@@ -14,10 +14,18 @@ enum Agent8State
     STATE_DEAD,
 };
 
+enum GameMode
+{
+    MODE_MENU,
+    MODE_PLAYING,
+    MODE_GAMEOVER,
+};
+
 struct GameState
 {
 	int score{ 0 };
     Agent8State agentState{ STATE_APPEAR };
+    GameMode mode{ MODE_MENU };
 };
 
 GameState gameState;
@@ -42,6 +50,9 @@ void UpdateCoinsAndStars();
 void UpdateLasers();
 void UpdateDestroyed();
 void UpdateAgent8();
+void ShowMainMenu();
+void ShowGameOver();
+void TriggerGameStart();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -60,16 +71,26 @@ void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
 bool MainGameUpdate(float elapsedTime)
 {
     Play::DrawBackground();
-    UpdateAgent8();
-    UpdateFan();
-    UpdateTools();
-    UpdateCoinsAndStars();
-    UpdateLasers();
-    UpdateDestroyed();
-    Play::DrawFontText("32px", "ARROW KEYS TO MOVE UP AND DOWN AND SPACE TO FIRE",
-                       { DISPLAY_WIDTH / 2, 40 }, Play::CENTRE);
-    Play::DrawFontText("72px", "SCORE: " + std::to_string(gameState.score),
-                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+    switch (gameState.mode)
+    {
+        case MODE_MENU:
+            ShowMainMenu();
+            break;
+        case MODE_PLAYING:
+            UpdateAgent8();
+            UpdateFan();
+            UpdateTools();
+            UpdateCoinsAndStars();
+            UpdateLasers();
+            UpdateDestroyed();
+            Play::DrawFontText("72px", "SCORE: " + std::to_string(gameState.score),
+                               { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+            break;
+        case MODE_GAMEOVER:
+            ShowGameOver();
+    }
+
     Play::PresentDrawingBuffer();
     return Play::KeyDown(Play::KEY_ESCAPE);
 }
@@ -330,18 +351,14 @@ void UpdateAgent8()
             obj_agent8.acceleration = { 0, -0.5f };
             Play::SetSprite(obj_agent8, "agent8_fall", 0);
             obj_agent8.rotation = 0;
-            if (obj_agent8.pos.y <= DISPLAY_HEIGHT * 0.66f)
-            {
-                gameState.agentState = STATE_PLAY;
-            }
+
+            if (obj_agent8.pos.y <= DISPLAY_HEIGHT * 0.66f) { gameState.agentState = STATE_PLAY; }
             break;
 
         case STATE_HALT:
             obj_agent8.velocity *= 0.9f;
-            if (Play::IsAnimationComplete(obj_agent8))
-            {
-                gameState.agentState = STATE_PLAY;
-            }  
+
+            if (Play::IsAnimationComplete(obj_agent8)) { gameState.agentState = STATE_PLAY; }  
             break;
 
         case STATE_PLAY:
@@ -351,22 +368,9 @@ void UpdateAgent8()
         case STATE_DEAD:
             obj_agent8.acceleration = { -0.3f , 0.5f };
             obj_agent8.rotation += 0.25f;
-            if (Play::KeyPressed(Play::KEY_SPACE) == true)
-            {
-                gameState.agentState = STATE_APPEAR;
-                obj_agent8.pos = { 115, 600 };
-                obj_agent8.velocity = { 0, 0 };
-                obj_agent8.frame = 0;
-                // Play::StartAudioLoop("music");
-                gameState.score = 0;
-
-                for (int id_obj : Play::CollectGameObjectIDsByType(TYPE_TOOL))
-                {
-                    Play::GetGameObject(id_obj).type = TYPE_DESTROYED;
-                }
-            }
+            
+            if (Play::IsAnimationComplete(obj_agent8)) { gameState.mode = MODE_GAMEOVER; }
             break;
-
     }
 
     Play::UpdateGameObject(obj_agent8);
@@ -378,4 +382,77 @@ void UpdateAgent8()
 
     Play::DrawLine({ obj_agent8.pos.x, 720 }, obj_agent8.pos, Play::cWhite);
     Play::DrawObjectRotated(obj_agent8);
+}
+
+void ShowMainMenu()
+{
+    Play::DrawFontText("72px", "Welcome to Spider Spy",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "ARROW KEYS TO MOVE UP AND DOWN AND \"SPACE\" TO FIRE",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 170 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Press \"ENTER\" to start the game",
+                       { 40, 400 }, Play::LEFT);
+
+    Play::DrawFontText("32px", "Press \"L\" to view the leaderboard",
+                       { 40, 300 }, Play::LEFT);
+
+    Play::DrawFontText("32px", "Press \"ESC\" to quit the game",
+                       { 40, 200 }, Play::LEFT);
+
+    if (Play::KeyPressed(Play::KEY_ENTER)) { TriggerGameStart(); }
+}
+
+void ShowGameOver()
+{
+    Play::DrawFontText("72px", "Game Over",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Final Score: " + std::to_string(gameState.score),
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 170 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "\"R\" restart",
+                       { DISPLAY_WIDTH * 3/4, 40 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "\"L\" leaderboard",
+                       { DISPLAY_WIDTH / 2, 40 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "\"ESC\" quit",
+
+                       { DISPLAY_WIDTH * 1/4, 40 }, Play::CENTRE);
+
+    GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
+
+    if (Play::KeyPressed(Play::KEY_R) == true)
+    {
+        // Reset Agent
+        GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
+        obj_agent8.pos = { 115, 600 };
+        obj_agent8.velocity = { 0, 0 };
+        obj_agent8.frame = 0;
+
+        // Start Game
+        TriggerGameStart();
+
+        // Destroy tools, coins and lasers
+        std::vector<int> vObjectsDestroy;
+
+        std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
+        std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
+        std::vector<int> vLasers = Play::CollectGameObjectIDsByType(TYPE_LASER);
+
+        vObjectsDestroy.insert(vObjectsDestroy.end(), vTools.begin(), vTools.end());
+        vObjectsDestroy.insert(vObjectsDestroy.end(), vCoins.begin(), vCoins.end());
+        vObjectsDestroy.insert(vObjectsDestroy.end(), vLasers.begin(), vLasers.end());
+
+        for (int id : vObjectsDestroy) { Play::DestroyGameObject(id); }
+    }
+}
+
+void TriggerGameStart()
+{
+    gameState.mode = MODE_PLAYING;
+    gameState.agentState = STATE_APPEAR;
+    gameState.score = 0;
 }
