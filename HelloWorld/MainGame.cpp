@@ -20,11 +20,13 @@ enum GameMode
     MODE_MENU,
     MODE_PLAYING,
     MODE_GAMEOVER,
+    MODE_LEADERBOARD,
 };
 
 struct GameState
 {
 	int score{ 0 };
+    bool scoreSaved{ false };
     Agent8State agentState{ STATE_APPEAR };
     GameMode mode{ MODE_SPLASH };
 };
@@ -55,6 +57,8 @@ void ShowSplashScreen();
 void ShowMainMenu();
 void ShowGameOver();
 void TriggerGameStart();
+void SaveScore(GameState gameState);
+void ShowLeaderboard();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -78,10 +82,12 @@ bool MainGameUpdate(float elapsedTime)
     {
         case MODE_SPLASH:
             ShowSplashScreen();
+
             break;
 
         case MODE_MENU:
             ShowMainMenu();
+
             break;
 
         case MODE_PLAYING:
@@ -91,12 +97,23 @@ bool MainGameUpdate(float elapsedTime)
             UpdateCoinsAndStars();
             UpdateLasers();
             UpdateDestroyed();
-            Play::DrawFontText("72px", "SCORE: " + std::to_string(gameState.score),
+            Play::DrawFontText("72px", "SCORE: " + to_string(gameState.score),
                                { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
             break;
 
         case MODE_GAMEOVER:
             ShowGameOver();
+
+            break;
+
+        case MODE_LEADERBOARD:
+            ShowLeaderboard();
+
+            break;
+
+        default:
+            cout << "ERROR 500: Internal Server Error" << endl;
+            return Play::KeyDown(Play::KEY_ESCAPE);
     }
 
     Play::PresentDrawingBuffer();
@@ -433,14 +450,26 @@ void ShowMainMenu()
     { 
         TriggerGameStart();
     }
+
+    if (Play::KeyPressed(Play::KEY_L) == true)
+    {
+        gameState.mode = MODE_LEADERBOARD;
+    }
 }
 
 void ShowGameOver()
 {
+    // Save the score
+    if (!gameState.scoreSaved)
+    {
+        SaveScore(gameState);
+        gameState.scoreSaved = true;
+    }
+
     Play::DrawFontText("72px", "Game Over",
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
 
-    Play::DrawFontText("32px", "Final Score: " + std::to_string(gameState.score),
+    Play::DrawFontText("32px", "Final Score: " + to_string(gameState.score),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 170 }, Play::CENTRE);
 
     Play::DrawFontText("32px", "\"R\" restart",
@@ -484,6 +513,11 @@ void ShowGameOver()
         for (int id : vObjectsDestroy) { Play::DestroyGameObject(id); }
     }
 
+    if (Play::KeyPressed(Play::KEY_L) == true)
+    {
+        gameState.mode = MODE_LEADERBOARD;
+    }
+
     if (Play::KeyPressed(Play::KEY_M) == true)
     {
         gameState.mode = MODE_MENU;
@@ -495,4 +529,84 @@ void TriggerGameStart()
     gameState.mode = MODE_PLAYING;
     gameState.agentState = STATE_APPEAR;
     gameState.score = 0;
+    gameState.scoreSaved = false;
+}
+
+void SaveScore(GameState gameState)
+{
+    // Declarations
+    vector<int> allScores;
+    ifstream inputLeaderboardFile("leaderboard.txt");
+    int savedScore = 0;
+    int currentScore = gameState.score;
+
+    if (!inputLeaderboardFile.is_open())
+    {
+        cout << "Error opening file" << endl;
+        return;
+    }
+
+    while (inputLeaderboardFile >> savedScore)
+    {
+        allScores.push_back(savedScore);
+    }
+
+    inputLeaderboardFile.close();
+
+    allScores.push_back(currentScore);
+    sort(allScores.begin(), allScores.end(), greater<int>());
+
+    // TODO: Add a limit to number of scores saved??????
+
+    ofstream outputLeaderboardFile("leaderboard.txt");
+
+    if (!outputLeaderboardFile.is_open())
+    {
+        cout << "Error opening file" << endl;
+        return;
+    }
+
+    for (int score : allScores)
+    {
+        outputLeaderboardFile << score << endl;
+    }
+    outputLeaderboardFile.close();
+}
+
+void ShowLeaderboard()
+{
+    Play::DrawFontText("72px", "Leaderboard",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "\"M\" Main",
+
+                       { DISPLAY_WIDTH * 3 / 8, 40 }, Play::CENTRE);
+
+    // Display Leaderboard
+    ifstream leaderboardFile("leaderboard.txt");
+    vector<int> allScores;
+    int currentScore = 0;
+    int yCoord = DISPLAY_HEIGHT - 150;
+
+    while (leaderboardFile >> currentScore)
+    {
+        allScores.push_back(currentScore);
+    }
+
+    leaderboardFile.close();
+
+
+    // Had a data assertion error. Through debugging, it was looping through one extra time. Need to add the i <
+    for (int i = 0; i < allScores.size() ; i++)
+    {
+        Play::DrawFontText("32px", to_string(i + 1) + ". " + to_string(allScores[i]),
+                           { DISPLAY_WIDTH / 2, yCoord }, Play::CENTRE);
+        yCoord -= 50;
+    }
+
+    if (Play::KeyPressed(Play::KEY_M) == true)
+    {
+        gameState.mode = MODE_MENU;
+        gameState.scoreSaved = false;
+    }
 }
