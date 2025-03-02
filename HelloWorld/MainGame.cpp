@@ -535,6 +535,7 @@ void SaveScore(GameState gameState)
 
     inputLeaderboardFile.close();
 
+    // Add current score to all saved scores in a vector in descending order
     allScores.push_back(currentScore);
     sort(allScores.begin(), allScores.end(), greater<int>());
 
@@ -567,7 +568,7 @@ void ShowLeaderboard()
     Play::DrawFontText("32px", "\"Enter\" Start Game",
                        { DISPLAY_WIDTH * 7 / 8, 40 }, Play::CENTRE);
 
-    // Display Leaderboard
+    // Read Leaderboard scores into vector
     ifstream leaderboardFile("leaderboard.txt");
     vector<int> allScores;
     int currentScore = 0;
@@ -580,9 +581,9 @@ void ShowLeaderboard()
 
     leaderboardFile.close();
 
-
+    // TODO??: Limit number of output values. Maybe only 10?
     // Had a data assertion error. Through debugging, it was looping through one extra time. Need to add the i <
-    for (int i = 0; i < allScores.size() ; i++)
+    for (int i = 0; i < allScores.size(); i++)
     {
         Play::DrawFontText("32px", to_string(i + 1) + ". " + to_string(allScores[i]),
                            { DISPLAY_WIDTH / 2, yCoord }, Play::CENTRE);
@@ -601,6 +602,7 @@ void ShowLeaderboard()
     }
 }
 
+// Was originally in ShowGameOver(), since wanted same functionality in ShowLeaderboard(), function was created to reduce code repetition
 void ResetGameState()
 {
     // Reset Agent
@@ -625,3 +627,19 @@ void ResetGameState()
         Play::DestroyGameObject(id);
     }
 }
+
+// Notes::
+/*
+* Potential Added Mechanics:
+*   - New Powerups:
+*       - Rapid Fire
+*       - Laser Fire
+*       - Invincibility
+*       - Double Points
+*       - Money Bag: all coins
+* 
+*   - A boss type tool
+*   - Levels
+*   - 2D movement
+*   - Different orientation
+*/
