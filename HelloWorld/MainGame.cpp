@@ -59,6 +59,7 @@ void ShowGameOver();
 void TriggerGameStart();
 void SaveScore(GameState gameState);
 void ShowLeaderboard();
+void ResetGameState();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -490,27 +491,8 @@ void ShowGameOver()
 
     if (Play::KeyPressed(Play::KEY_R) == true)
     {
-        // Reset Agent
-        GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
-        obj_agent8.pos = { 115, 600 };
-        obj_agent8.velocity = { 0, 0 };
-        obj_agent8.frame = 0;
-
-        // Start Game
+        ResetGameState();
         TriggerGameStart();
-
-        // Destroy tools, coins and lasers
-        std::vector<int> vObjectsDestroy;
-
-        std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
-        std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
-        std::vector<int> vLasers = Play::CollectGameObjectIDsByType(TYPE_LASER);
-
-        vObjectsDestroy.insert(vObjectsDestroy.end(), vTools.begin(), vTools.end());
-        vObjectsDestroy.insert(vObjectsDestroy.end(), vCoins.begin(), vCoins.end());
-        vObjectsDestroy.insert(vObjectsDestroy.end(), vLasers.begin(), vLasers.end());
-
-        for (int id : vObjectsDestroy) { Play::DestroyGameObject(id); }
     }
 
     if (Play::KeyPressed(Play::KEY_L) == true)
@@ -582,6 +564,9 @@ void ShowLeaderboard()
 
                        { DISPLAY_WIDTH * 3 / 8, 40 }, Play::CENTRE);
 
+    Play::DrawFontText("32px", "\"Enter\" Start Game",
+                       { DISPLAY_WIDTH * 7 / 8, 40 }, Play::CENTRE);
+
     // Display Leaderboard
     ifstream leaderboardFile("leaderboard.txt");
     vector<int> allScores;
@@ -607,6 +592,36 @@ void ShowLeaderboard()
     if (Play::KeyPressed(Play::KEY_M) == true)
     {
         gameState.mode = MODE_MENU;
-        gameState.scoreSaved = false;
+    }
+
+    if (Play::KeyPressed(Play::KEY_ENTER) == true)
+    {
+        ResetGameState();
+        TriggerGameStart();
+    }
+}
+
+void ResetGameState()
+{
+    // Reset Agent
+    GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
+    obj_agent8.pos = { 115, 600 };
+    obj_agent8.velocity = { 0, 0 };
+    obj_agent8.frame = 0;
+
+    // Destroy tools, coins and lasers
+    std::vector<int> vObjectsDestroy;
+
+    std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
+    std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
+    std::vector<int> vLasers = Play::CollectGameObjectIDsByType(TYPE_LASER);
+
+    vObjectsDestroy.insert(vObjectsDestroy.end(), vTools.begin(), vTools.end());
+    vObjectsDestroy.insert(vObjectsDestroy.end(), vCoins.begin(), vCoins.end());
+    vObjectsDestroy.insert(vObjectsDestroy.end(), vLasers.begin(), vLasers.end());
+
+    for (int id : vObjectsDestroy)
+    {
+        Play::DestroyGameObject(id);
     }
 }
