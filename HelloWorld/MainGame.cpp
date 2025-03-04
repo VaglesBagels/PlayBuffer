@@ -5,6 +5,10 @@
 int DISPLAY_WIDTH = 1280;
 int DISPLAY_HEIGHT = 720;
 int DISPLAY_SCALE = 1;
+const int leaderboardSize = 10;
+float powerUpTimer = 0.0f;
+float powerUpDuration = 10.0f;
+bool isPowerUpActive = false;
 
 enum Agent8State
 {
@@ -43,6 +47,8 @@ enum GameObjectType
     TYPE_STAR,
     TYPE_LASER,
     TYPE_DESTROYED,
+    TYPE_POWERUP,
+    TYPE_CASH,
 };
 
 // Function Declarations
@@ -60,6 +66,7 @@ void TriggerGameStart();
 void SaveScore(GameState gameState);
 void ShowLeaderboard();
 void ResetGameState();
+void UpdatePowerUp(float elapsedTime);
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -100,6 +107,8 @@ bool MainGameUpdate(float elapsedTime)
             UpdateDestroyed();
             Play::DrawFontText("72px", "SCORE: " + to_string(gameState.score),
                                { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+
+            UpdatePowerUp(elapsedTime);
             break;
 
         case MODE_GAMEOVER:
@@ -235,7 +244,9 @@ void UpdateTools()
         Play::DrawObjectRotated(obj_tool);
 
         if (!Play::IsVisible(obj_tool))
+        {
             Play::DestroyGameObject(id);
+        }
     }
 
 
@@ -563,7 +574,7 @@ void ShowLeaderboard()
 
     Play::DrawFontText("32px", "\"M\" Main",
 
-                       { DISPLAY_WIDTH * 3 / 8, 40 }, Play::CENTRE);
+                       { DISPLAY_WIDTH * 1 / 8, 40 }, Play::CENTRE);
 
     Play::DrawFontText("32px", "\"Enter\" Start Game",
                        { DISPLAY_WIDTH * 7 / 8, 40 }, Play::CENTRE);
@@ -583,7 +594,8 @@ void ShowLeaderboard()
 
     // TODO??: Limit number of output values. Maybe only 10?
     // Had a data assertion error. Through debugging, it was looping through one extra time. Need to add the i <
-    for (int i = 0; i < allScores.size(); i++)
+    // Having more than 10 caused some UI overlap issues (change the loop from i < allscores.size() to a const value)
+    for (int i = 0; i < leaderboardSize; i++)
     {
         Play::DrawFontText("32px", to_string(i + 1) + ". " + to_string(allScores[i]),
                            { DISPLAY_WIDTH / 2, yCoord }, Play::CENTRE);
@@ -627,6 +639,86 @@ void ResetGameState()
         Play::DestroyGameObject(id);
     }
 }
+
+void UpdatePowerUp(float elapsedTime)
+{
+    GameObject& obj_fan = Play::GetGameObjectByType(TYPE_FAN);
+    GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
+
+    std::vector<int> vPowerUps = Play::CollectGameObjectIDsByType(TYPE_POWERUP);
+
+    bool hasCollided = false;
+
+    if (vPowerUps.size() < 1)
+    {
+        if (Play::RandomRoll(500) == 1)
+        {
+            int id_money = Play::CreateGameObject(TYPE_POWERUP, obj_fan.pos, 20, "money");
+            GameObject& obj_powerup = Play::GetGameObject(id_money);
+            obj_powerup.velocity = { -9, 0 };
+            obj_powerup.rotSpeed = 0.1f;
+        }
+    }
+
+    for (int id_money : vPowerUps)
+    {
+        GameObject& obj_powerup = Play::GetGameObject(id_money);
+
+        if (Play::IsColliding(obj_agent8, obj_powerup))
+        {
+            for (float rad{ 0.125f }; rad < 2.0f; rad += 0.125f)
+            {
+                int id_cash = Play::CreateGameObject(TYPE_CASH, obj_agent8.pos, 0, "cash");
+                GameObject& obj_cash = Play::GetGameObject(id_cash);
+
+                obj_cash.rotSpeed = 0.1f;
+                obj_cash.acceleration = { 0.0f, -0.5f };
+                Play::SetGameObjectDirection(obj_cash, 16, rad * PLAY_PI);
+            }
+
+            hasCollided = true;
+            gameState.score += 1000;
+            Play::PlayAudio("collect");
+        }
+
+        Play::UpdateGameObject(obj_powerup);
+        Play::DrawObjectRotated(obj_powerup);
+
+        if (!Play::IsVisible(obj_powerup) || hasCollided)
+        {
+            Play::DestroyGameObject(id_money);
+        }
+    }
+
+    std::vector<int> vCash = Play::CollectGameObjectIDsByType(TYPE_CASH);
+
+    for (int id_cash : vCash)
+    {
+        GameObject& obj_cash = Play::GetGameObject(id_cash);
+
+        Play::UpdateGameObject(obj_cash);
+        Play::DrawObjectRotated(obj_cash);
+
+        if (!Play::IsVisible(obj_cash))
+        {
+            Play::DestroyGameObject(id_cash);
+        }
+    }
+
+    /*if (isPowerUpActive)
+    {
+        powerUpTimer += elapsedTime;
+
+        Play::DrawDebugText({ 50, 50 }, to_string(powerUpTimer).c_str());
+
+        if (powerUpTimer >= powerUpDuration)
+        {
+            isPowerUpActive = false;
+            powerUpTimer = 0.0f;
+        }
+    }*/
+}
+
 
 // Notes::
 /*
