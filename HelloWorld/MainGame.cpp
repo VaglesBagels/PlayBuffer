@@ -25,6 +25,7 @@ enum GameMode
     MODE_PLAYING,
     MODE_GAMEOVER,
     MODE_LEADERBOARD,
+    MODE_SHOP,
 };
 
 struct GameState
@@ -67,6 +68,7 @@ void SaveScore(GameState gameState);
 void ShowLeaderboard();
 void ResetGameState();
 void UpdatePowerUp(float elapsedTime);
+void ShowShopMenu();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -106,7 +108,7 @@ bool MainGameUpdate(float elapsedTime)
             UpdateLasers();
             UpdateDestroyed();
             Play::DrawFontText("72px", "SCORE: " + to_string(gameState.score),
-                               { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT - 80 }, Play::CENTRE);
+                               { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 7/8 }, Play::CENTRE);
 
             UpdatePowerUp(elapsedTime);
             break;
@@ -118,6 +120,11 @@ bool MainGameUpdate(float elapsedTime)
 
         case MODE_LEADERBOARD:
             ShowLeaderboard();
+
+            break;
+
+        case MODE_SHOP:
+            ShowShopMenu();
 
             break;
 
@@ -180,12 +187,17 @@ void HandlePlayerControls()
 
     Play::DrawLine({ obj_agent8.pos.x, 720 }, obj_agent8.pos, Play::cWhite);
     Play::DrawObjectRotated(obj_agent8);
+
+    if (Play::KeyPressed(Play::KEY_S))
+    {
+        gameState.mode = MODE_SHOP;
+    }
 }
 
 void UpdateFan()
 {
     GameObject& obj_fan = Play::GetGameObjectByType(TYPE_FAN);
-    if (Play::RandomRoll(50) == 50)
+    if (Play::RandomRoll(50) == 50 && !isPowerUpActive)
     {
         int id = Play::CreateGameObject(TYPE_TOOL, obj_fan.pos, 50, "driver");
         GameObject& obj_tool = Play::GetGameObject(id);
@@ -201,7 +213,7 @@ void UpdateFan()
         Play::PlayAudio("tool");
     }
 
-    if (Play::RandomRoll(150) == 1)
+    if (Play::RandomRoll(150) == 1 && !isPowerUpActive)
     {
         int id = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 40, "coin");
         GameObject& obj_coin = Play::GetGameObject(id);
@@ -275,7 +287,16 @@ void UpdateCoinsAndStars()
             }
 
             hasCollided = true;
-            gameState.score += 500;
+
+            if (!isPowerUpActive)
+            {
+                gameState.score += 500;
+            }
+            else
+            {
+                gameState.score += 750;
+            }
+            
             Play::PlayAudio("collect");
         }
 
@@ -523,6 +544,7 @@ void TriggerGameStart()
     gameState.agentState = STATE_APPEAR;
     gameState.score = 0;
     gameState.scoreSaved = false;
+    isPowerUpActive = false;
 }
 
 void SaveScore(GameState gameState)
@@ -649,14 +671,29 @@ void UpdatePowerUp(float elapsedTime)
 
     bool hasCollided = false;
 
-    if (vPowerUps.size() < 1)
+    // In javascript, theres like a substitute ? that is a simplified if else
+    // Does something similar work in C++ and if so, how to implement and would the below if-else require it?
+    // As long as there is not already a money bag on screen, then one can be spawned.
+
+    if (vPowerUps.size() != 1 && !isPowerUpActive)
     {
         if (Play::RandomRoll(500) == 1)
         {
             int id_money = Play::CreateGameObject(TYPE_POWERUP, obj_fan.pos, 20, "money");
             GameObject& obj_powerup = Play::GetGameObject(id_money);
-            obj_powerup.velocity = { -9, 0 };
+            obj_powerup.velocity = { -6, 0 };
             obj_powerup.rotSpeed = 0.1f;
+        }
+    }
+    else
+    {
+        if (Play::RandomRoll(100) == 1 && isPowerUpActive)
+        {
+            int id_coin = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 20, "coin");
+            GameObject& obj_coin = Play::GetGameObject(id_coin);
+            Play::SetSprite(obj_coin, "coins", 0.1);
+            obj_coin.velocity = { -10, 0 };
+            obj_coin.rotSpeed = 0.1f;
         }
     }
 
@@ -672,13 +709,15 @@ void UpdatePowerUp(float elapsedTime)
                 GameObject& obj_cash = Play::GetGameObject(id_cash);
 
                 obj_cash.rotSpeed = 0.1f;
-                obj_cash.acceleration = { 0.0f, -0.5f };
+                obj_cash.acceleration = { 0.0f, 0.0f };
                 Play::SetGameObjectDirection(obj_cash, 16, rad * PLAY_PI);
             }
 
             hasCollided = true;
-            gameState.score += 1000;
             Play::PlayAudio("collect");
+
+            // What happens when it gets picked up
+            isPowerUpActive = true;
         }
 
         Play::UpdateGameObject(obj_powerup);
@@ -705,7 +744,7 @@ void UpdatePowerUp(float elapsedTime)
         }
     }
 
-    /*if (isPowerUpActive)
+    if (isPowerUpActive)
     {
         powerUpTimer += elapsedTime;
 
@@ -716,9 +755,34 @@ void UpdatePowerUp(float elapsedTime)
             isPowerUpActive = false;
             powerUpTimer = 0.0f;
         }
-    }*/
+    }
 }
 
+void ShowShopMenu()
+{
+    int shootingSpeedCost = 1000;
+    int punchThroughCost = 1000;
+    int invincibilityCost = 5000;
+
+    // If pressed key_s, game pauses and shop opens
+    Play::DrawFontText("72px", "Shop",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 7/8 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Current Score: " + to_string(gameState.score),
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 6/8 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "1. Shooting Speed: +" + to_string(shootingSpeedCost),
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 4/8 }, Play::CENTRE);
+    Play::DrawFontText("32px", "2. Punch Through: +" + to_string(punchThroughCost),
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 3/8 }, Play::CENTRE);
+    Play::DrawFontText("32px", "3. Invincibility (temporary): " + to_string(invincibilityCost),
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 2/8 }, Play::CENTRE);
+
+    if (Play::KeyPressed(Play::KEY_S))
+    {
+        gameState.mode = MODE_PLAYING;
+    }
+}
 
 // Notes::
 /*
@@ -728,9 +792,9 @@ void UpdatePowerUp(float elapsedTime)
 *       - Laser Fire
 *       - Invincibility
 *       - Double Points
-*       - Money Bag: all coins
+*       - Money Bag: all coins -- Have implemented this
 * 
-*   - A boss type tool
+*   - A boss type tool -- Might add a boss bomb, have a limited time to kill -- maybe create a roguelike screen after x score to add more damage
 *   - Levels
 *   - 2D movement
 *   - Different orientation
