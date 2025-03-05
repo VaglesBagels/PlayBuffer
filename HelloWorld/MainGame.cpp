@@ -980,16 +980,5 @@ void UpdateExplosions()
 
 // Notes::
 /*
-* Potential Added Mechanics:
-*   - New Powerups:
-*       - Rapid Fire
-*       - Laser Fire
-*       - Invincibility
-*       - Double Points
-*       - Money Bag: all coins -- Have implemented this
-* 
-*   - A boss type tool -- Might add a boss bomb, have a limited time to kill -- maybe create a roguelike screen after x score to add more damage
-*   - Levels
-*   - 2D movement
-*   - Different orientation
+* Need to update leaderboard intake to take in the level and score
 */
