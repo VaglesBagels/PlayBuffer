@@ -13,6 +13,8 @@ float matchDuration = 0;
 float invincibleTimer = 0.0f;
 float invincibleDuration = 10.0f;
 bool isInvincible = false;
+bool isExplosive = false;
+int timer = 0;
 
 enum Agent8State
 {
@@ -57,6 +59,7 @@ enum GameObjectType
     TYPE_DESTROYED,
     TYPE_POWERUP,
     TYPE_CASH,
+    TYPE_EXPLOSIONS,
 };
 
 // Function Declarations
@@ -80,6 +83,7 @@ void UpdateLevel(float elapsedTime);
 void DrawProgressBar(float barDuration, float totalDuration, Point2D bottomLeftCorner, float barThickness, float barLength, Play::Colour colour);
 void ShowLevelCompleteMenu();
 void UpdatePassiveUpgrades(float elapsedTime);
+void UpdateExplosions();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -126,6 +130,7 @@ bool MainGameUpdate(float elapsedTime)
             UpdatePowerUp(elapsedTime);
             UpdateLevel(elapsedTime);
             UpdatePassiveUpgrades(elapsedTime);
+            UpdateExplosions();
             break;
 
         case MODE_GAMEOVER:
@@ -223,14 +228,14 @@ void UpdateFan(float& matchDuration)
         int id = Play::CreateGameObject(TYPE_TOOL, obj_fan.pos, 50, "driver");
         GameObject& obj_tool = Play::GetGameObject(id);
         obj_tool.velocity = Point2f(-8, Play::RandomRollRange(-1, 1) * 6);
-        obj_tool.velocity.x -= (matchDuration * 0.2);
+        obj_tool.velocity.x -= (matchDuration * 0.1);
 
         if (Play::RandomRoll(2) == 1)
         {
             Play::SetSprite(obj_tool, "spanner", 0);
             obj_tool.radius = 100;
             obj_tool.velocity.x = -4;
-            obj_tool.velocity.x -= (matchDuration * 0.2);
+            obj_tool.velocity.x -= (matchDuration * 0.1);
             obj_tool.rotSpeed = 0.1f;
         }
         // Play::PlayAudio("tool");
@@ -241,7 +246,7 @@ void UpdateFan(float& matchDuration)
         int id = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 40, "coin");
         GameObject& obj_coin = Play::GetGameObject(id);
         obj_coin.velocity = { -3, 0 };
-        obj_coin.velocity.x -= (matchDuration * 0.2);
+        obj_coin.velocity.x -= (matchDuration * 0.1);
         obj_coin.rotSpeed = 0.1f;
     }
 
@@ -267,9 +272,9 @@ void UpdateTools()
 
         if (gameState.agentState != STATE_DEAD && Play::IsColliding(obj_tool, obj_agent8) && !isInvincible)
         {
-            Play::StopAudio("music");
-            Play::PlayAudio("die");
-            gameState.agentState = STATE_DEAD;
+            // Play::StopAudio("music");
+            // Play::PlayAudio("die");
+            // gameState.agentState = STATE_DEAD;
         }
 
         if (Play::IsColliding(obj_tool, obj_agent8) && isInvincible)
@@ -362,6 +367,7 @@ void UpdateLasers()
     std::vector<int> vLasers = Play::CollectGameObjectIDsByType(TYPE_LASER);
     std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
     std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
+    std::vector<int> vExplosions = Play::CollectGameObjectIDsByType(TYPE_EXPLOSIONS);
 
     for (int id_laser : vLasers)
     {
@@ -372,10 +378,22 @@ void UpdateLasers()
         {
             GameObject& obj_tool = Play::GetGameObject(id_tool);
 
-            if (Play::IsColliding(obj_laser, obj_tool))
+            if (!isExplosive && Play::IsColliding(obj_laser, obj_tool))
             {
                 hasCollided = true;
                 obj_tool.type = TYPE_DESTROYED;
+                gameState.score += 100;
+            }
+            else if  (isExplosive && Play::IsColliding(obj_laser, obj_tool))
+            {
+                int id_explosion = Play::CreateGameObject(TYPE_EXPLOSIONS, obj_tool.pos, 30, "explosion");
+                GameObject& obj_explosion = Play::GetGameObject(id_explosion);
+                Play::SetSprite(obj_explosion, "explosions", 0.1);
+                obj_explosion.velocity = { 0, 0 };
+                obj_explosion.rotSpeed = 0.1f;
+
+                hasCollided = true;
+                Play::DestroyGameObject(id_tool);
                 gameState.score += 100;
             }
         }
@@ -709,13 +727,13 @@ void UpdatePowerUp(float elapsedTime)
             int id_money = Play::CreateGameObject(TYPE_POWERUP, obj_fan.pos, 20, "money");
             GameObject& obj_powerup = Play::GetGameObject(id_money);
             obj_powerup.velocity = { -6, 0 };
-            obj_powerup.velocity.x -= (matchDuration * 0.2);
+            obj_powerup.velocity.x -= (matchDuration * 0.1);
             obj_powerup.rotSpeed = 0.1f;
         }
     }
     else
     {
-        if (Play::RandomRoll(20) == 1 && isPowerUpActive)
+        if (Play::RandomRoll(100) == 1 && isPowerUpActive)
         {
             int id_coin = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 20, "coin");
             GameObject& obj_coin = Play::GetGameObject(id_coin);
@@ -789,8 +807,7 @@ void UpdatePowerUp(float elapsedTime)
 
 void ShowShopMenu()
 {
-    int shootingSpeedCost = 1000;
-    int punchThroughCost = 1000;
+    int explosiveLasersCost = 2000;
     int invincibilityCost = 5000;
 
     // Need to add shop purchases - score and changes to the code of passives
@@ -801,25 +818,23 @@ void ShowShopMenu()
     Play::DrawFontText("32px", "Current Score: " + to_string(gameState.score),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 6/8 }, Play::CENTRE);
 
-    Play::DrawFontText("32px", "1. Shooting Speed: +" + to_string(shootingSpeedCost),
+    Play::DrawFontText("32px", "1. Explosive Rounds: +" + to_string(explosiveLasersCost),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 4/8 }, Play::CENTRE);
 
-    Play::DrawFontText("32px", "2. Punch Through: +" + to_string(punchThroughCost),
+    Play::DrawFontText("32px", "2. Invincibility (temporary): " + to_string(invincibilityCost),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 3/8 }, Play::CENTRE);
-
-    Play::DrawFontText("32px", "3. Invincibility (temporary): " + to_string(invincibilityCost),
-                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 2/8 }, Play::CENTRE);
 
     Play::DrawFontText("32px", "Press \"c\" to continue",
                        { DISPLAY_WIDTH * 1/16, DISPLAY_HEIGHT * 1/16 }, Play::LEFT);
 
-    if (Play::KeyPressed(Play::KEY_C))
+    if (Play::KeyPressed(Play::KEY_1) && !isExplosive && gameState.score > explosiveLasersCost)
     {
-        gameState.mode = MODE_PLAYING;
+        isExplosive = true;
+
+        gameState.score -= explosiveLasersCost;
     }
 
-    // Passive Upgrades
-    if (Play::KeyPressed(Play::KEY_3) && !isInvincible)
+    if (Play::KeyPressed(Play::KEY_2) && !isInvincible && gameState.score > invincibilityCost)
     {
         isInvincible = true;
 
@@ -828,8 +843,19 @@ void ShowShopMenu()
 
     if (isInvincible)
     {
+        Play::DrawFontText("32px", "Already Purchased!",
+                           { DISPLAY_WIDTH / 2 , DISPLAY_HEIGHT * 7 / 16 }, Play::CENTRE);
+    }
+
+    if (isExplosive)
+    {
         Play::DrawFontText("32px", "Bought! Cyan Timer on game screen",
                            { DISPLAY_WIDTH / 2 , DISPLAY_HEIGHT * 3 / 16 }, Play::CENTRE);
+    }
+
+    if (Play::KeyPressed(Play::KEY_C))
+    {
+        gameState.mode = MODE_PLAYING;
     }
 }
 
@@ -920,6 +946,38 @@ void UpdatePassiveUpgrades(float elapsedTime)
     }
 }
 
+void UpdateExplosions()
+{
+    std::vector<int> vExplosions = Play::CollectGameObjectIDsByType(TYPE_EXPLOSIONS);
+    std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
+
+    for (int id_explosion : vExplosions)
+    {
+        GameObject& obj_explosion = Play::GetGameObject(id_explosion);
+        bool hasCollided = false;
+
+        for (int id_tool : vTools)
+        {
+            GameObject& obj_tool = Play::GetGameObject(id_tool);
+
+            if (Play::IsColliding(obj_explosion, obj_tool))
+            {
+                hasCollided = true;
+                Play::DestroyGameObject(id_tool);
+                gameState.score += 100;
+            }
+        }
+
+        Play::UpdateGameObject(obj_explosion);
+        Play::DrawObjectRotated(obj_explosion);
+
+        if (!Play::IsVisible(obj_explosion) || IsAnimationComplete(obj_explosion))
+        {
+            Play::DestroyGameObject(id_explosion);
+        }
+    }
+}
+
 // Notes::
 /*
 * Potential Added Mechanics:
@@ -935,36 +993,3 @@ void UpdatePassiveUpgrades(float elapsedTime)
 *   - 2D movement
 *   - Different orientation
 */
-
-// This function causes the progress bar to go up to 100% starting from match duration
-//void DrawProgressBar(float& matchDuration, Point2D bottomLeftCorner, float barThickness, float barLength, bool showPercentage)
-//{
-//    // Bar Outline -1 to the starting point due to pixel padding
-//    Play::DrawRect({ bottomLeftCorner.x - 1, bottomLeftCorner.y - 1 }, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cGrey);
-//
-//    // Had to add .0f to 1000 and 60 to ensure that it incremented correctly. When it was not there, causeed the bar to require ~65sec to be 100%
-//    float progress = matchDuration * (barLength / 60.0f);
-//
-//    if (progress <= barLength && showPercentage)
-//    {
-//        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, cBlue, true);
-//
-//        float percentage = progress / barLength * 100;
-//
-//        stringstream percentFormat;
-//        percentFormat << fixed << setprecision(2) << percentage;
-//
-//        Play::DrawFontText("32px", percentFormat.str() + "%",
-//                           { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
-//    }
-//    else
-//    {
-//        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cBlue, true);
-//
-//        if (showPercentage)
-//        {
-//            Play::DrawFontText("32px", "100%",
-//                               { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
-//        }
-//    }
-//}
