@@ -10,6 +10,9 @@ float powerUpTimer = 0.0f;
 float powerUpDuration = 10.0f;
 bool isPowerUpActive = false;
 float matchDuration = 0;
+float invincibleTimer = 0.0f;
+float invincibleDuration = 10.0f;
+bool isInvincible = false;
 
 enum Agent8State
 {
@@ -74,8 +77,9 @@ void ResetGameState();
 void UpdatePowerUp(float elapsedTime);
 void ShowShopMenu();
 void UpdateLevel(float elapsedTime);
-void DrawProgressBar(float barDuration, Point2D bottomLeftCorner, float barThickness, float barLength);
+void DrawProgressBar(float barDuration, float totalDuration, Point2D bottomLeftCorner, float barThickness, float barLength, Play::Colour colour);
 void ShowLevelCompleteMenu();
+void UpdatePassiveUpgrades(float elapsedTime);
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -121,6 +125,7 @@ bool MainGameUpdate(float elapsedTime)
 
             UpdatePowerUp(elapsedTime);
             UpdateLevel(elapsedTime);
+            UpdatePassiveUpgrades(elapsedTime);
             break;
 
         case MODE_GAMEOVER:
@@ -259,12 +264,12 @@ void UpdateTools()
     {
         GameObject& obj_tool = Play::GetGameObject(id);
 
-        /*if (gameState.agentState != STATE_DEAD && Play::IsColliding(obj_tool, obj_agent8))
+        if (gameState.agentState != STATE_DEAD && Play::IsColliding(obj_tool, obj_agent8) && !isInvincible)
         {
             Play::StopAudio("music");
             Play::PlayAudio("die");
             gameState.agentState = STATE_DEAD;
-        }*/
+        }
         Play::UpdateGameObject(obj_tool);
 
         if (Play::IsLeavingDisplayArea(obj_tool, Play::VERTICAL))
@@ -761,7 +766,7 @@ void UpdatePowerUp(float elapsedTime)
     {
         powerUpTimer += elapsedTime;
 
-        DrawProgressBar(powerUpTimer, { 50, 50 }, 25, 200);
+        DrawProgressBar(powerUpTimer, powerUpDuration, { 50, 50 }, 25, 200, cMagenta);
 
         // Play::DrawDebugText({ 50, 50 }, to_string(powerUpTimer).c_str());
 
@@ -778,6 +783,8 @@ void ShowShopMenu()
     int shootingSpeedCost = 1000;
     int punchThroughCost = 1000;
     int invincibilityCost = 5000;
+
+    // Need to add shop purchases - score and changes to the code of passives
 
     Play::DrawFontText("72px", "Shop",
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 7/8 }, Play::CENTRE);
@@ -801,22 +808,36 @@ void ShowShopMenu()
     {
         gameState.mode = MODE_PLAYING;
     }
+
+    // Passive Upgrades
+    if (Play::KeyPressed(Play::KEY_3) && !isInvincible)
+    {
+        isInvincible = true;
+
+        gameState.score -= invincibilityCost;
+    }
+
+    if (isInvincible)
+    {
+        Play::DrawFontText("32px", "Bought! Cyan Timer on game screen",
+                           { DISPLAY_WIDTH / 2 , DISPLAY_HEIGHT * 3 / 16 }, Play::CENTRE);
+    }
 }
 
-void DrawProgressBar(float barDuration, Point2D bottomLeftCorner, float barThickness, float barLength)
+void DrawProgressBar(float barDuration, float totalDuration, Point2D bottomLeftCorner, float barThickness, float barLength, Play::Colour colour)
 {
     // Bar Outline -1 to the starting point due to pixel padding
     Play::DrawRect({ bottomLeftCorner.x - 1, bottomLeftCorner.y - 1 }, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cGrey);
 
     // This section for bar to countdown -- potentially add a bool value to see if the bar needs to be counted up or down
-    float remainingTime = powerUpDuration - barDuration;
+    float remainingTime = totalDuration - barDuration;
 
     // Had to add .0f to 1000 and 60 to ensure that it incremented correctly. When it was not there, causeed the bar to require ~65sec to be 100%
-    float progress = remainingTime * (barLength / powerUpDuration);
+    float progress = remainingTime * (barLength / totalDuration);
 
     if (progress >= 0)
     {
-        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, cMagenta, true);
+        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, colour, true);
     }
 }
 
@@ -871,6 +892,22 @@ void ShowLevelCompleteMenu()
     if (Play::KeyPressed(Play::KEY_S))
     {
         gameState.mode = MODE_SHOP;
+    }
+}
+
+void UpdatePassiveUpgrades(float elapsedTime)
+{
+    if (gameState.mode != MODE_SHOP && isInvincible)
+    {
+        invincibleTimer += elapsedTime;
+
+        DrawProgressBar(invincibleTimer, invincibleDuration, { 50, DISPLAY_HEIGHT * 5 /8 }, 25, 200, cCyan);
+
+        if (invincibleTimer > invincibleDuration)
+        {
+            invincibleTimer = 0.0f;
+            isInvincible = false;
+        }
     }
 }
 
