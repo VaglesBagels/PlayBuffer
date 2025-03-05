@@ -569,6 +569,7 @@ void TriggerGameStart()
     gameState.score = 0;
     gameState.scoreSaved = false;
     isPowerUpActive = false;
+    matchDuration = 0;
 }
 
 void SaveScore(GameState gameState)
