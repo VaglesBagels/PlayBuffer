@@ -9,6 +9,7 @@ const int leaderboardSize = 10;
 float powerUpTimer = 0.0f;
 float powerUpDuration = 10.0f;
 bool isPowerUpActive = false;
+float matchDuration = 0;
 
 enum Agent8State
 {
@@ -26,6 +27,7 @@ enum GameMode
     MODE_GAMEOVER,
     MODE_LEADERBOARD,
     MODE_SHOP,
+    MODE_LEVELCOMPLETE,
 };
 
 struct GameState
@@ -34,6 +36,8 @@ struct GameState
     bool scoreSaved{ false };
     Agent8State agentState{ STATE_APPEAR };
     GameMode mode{ MODE_SPLASH };
+    float progress = 0.0f;
+    int currentLevel = 1;
 };
 
 GameState gameState;
@@ -54,7 +58,7 @@ enum GameObjectType
 
 // Function Declarations
 void HandlePlayerControls();
-void UpdateFan();
+void UpdateFan(float& matchDuration);
 void UpdateTools();
 void UpdateCoinsAndStars();
 void UpdateLasers();
@@ -69,6 +73,9 @@ void ShowLeaderboard();
 void ResetGameState();
 void UpdatePowerUp(float elapsedTime);
 void ShowShopMenu();
+void UpdateLevel(float elapsedTime);
+void DrawProgressBar(float& matchDuration, Point2D bottomLeftCorner, float barThickness, float barLength, bool showPercentage = false);
+void ShowLevelCompleteMenu();
 
 // The entry point for a PlayBuffer program 
 void MainGameEntry(PLAY_IGNORE_COMMAND_LINE)
@@ -101,8 +108,10 @@ bool MainGameUpdate(float elapsedTime)
             break;
 
         case MODE_PLAYING:
+            matchDuration += elapsedTime;
+
             UpdateAgent8();
-            UpdateFan();
+            UpdateFan(matchDuration);
             UpdateTools();
             UpdateCoinsAndStars();
             UpdateLasers();
@@ -111,6 +120,7 @@ bool MainGameUpdate(float elapsedTime)
                                { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 7/8 }, Play::CENTRE);
 
             UpdatePowerUp(elapsedTime);
+            UpdateLevel(elapsedTime);
             break;
 
         case MODE_GAMEOVER:
@@ -125,6 +135,11 @@ bool MainGameUpdate(float elapsedTime)
 
         case MODE_SHOP:
             ShowShopMenu();
+
+            break;
+
+        case MODE_LEVELCOMPLETE:
+            ShowLevelCompleteMenu();
 
             break;
 
@@ -178,7 +193,7 @@ void HandlePlayerControls()
         Vector2D firePos = obj_agent8.pos + Vector2D(155, 75);
         int id = Play::CreateGameObject(TYPE_LASER, firePos, 30, "laser");
         Play::GetGameObject(id).velocity = { 32, 0 };
-        Play::PlayAudio("shoot");
+        // Play::PlayAudio("shoot");
     }
     Play::UpdateGameObject(obj_agent8);
 
@@ -194,23 +209,26 @@ void HandlePlayerControls()
     }
 }
 
-void UpdateFan()
+void UpdateFan(float& matchDuration)
 {
     GameObject& obj_fan = Play::GetGameObjectByType(TYPE_FAN);
-    if (Play::RandomRoll(50) == 50 && !isPowerUpActive)
+    
+    if (Play::RandomRoll(50) == 1 && !isPowerUpActive)
     {
         int id = Play::CreateGameObject(TYPE_TOOL, obj_fan.pos, 50, "driver");
         GameObject& obj_tool = Play::GetGameObject(id);
         obj_tool.velocity = Point2f(-8, Play::RandomRollRange(-1, 1) * 6);
+        obj_tool.velocity.x -= (matchDuration * 0.2);
 
         if (Play::RandomRoll(2) == 1)
         {
             Play::SetSprite(obj_tool, "spanner", 0);
             obj_tool.radius = 100;
             obj_tool.velocity.x = -4;
+            obj_tool.velocity.x -= (matchDuration * 0.2);
             obj_tool.rotSpeed = 0.1f;
         }
-        Play::PlayAudio("tool");
+        // Play::PlayAudio("tool");
     }
 
     if (Play::RandomRoll(150) == 1 && !isPowerUpActive)
@@ -218,6 +236,7 @@ void UpdateFan()
         int id = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 40, "coin");
         GameObject& obj_coin = Play::GetGameObject(id);
         obj_coin.velocity = { -3, 0 };
+        obj_coin.velocity.x -= (matchDuration * 0.2);
         obj_coin.rotSpeed = 0.1f;
     }
 
@@ -240,12 +259,12 @@ void UpdateTools()
     {
         GameObject& obj_tool = Play::GetGameObject(id);
 
-        if (gameState.agentState != STATE_DEAD && Play::IsColliding(obj_tool, obj_agent8))
+        /*if (gameState.agentState != STATE_DEAD && Play::IsColliding(obj_tool, obj_agent8))
         {
             Play::StopAudio("music");
             Play::PlayAudio("die");
             gameState.agentState = STATE_DEAD;
-        }
+        }*/
         Play::UpdateGameObject(obj_tool);
 
         if (Play::IsLeavingDisplayArea(obj_tool, Play::VERTICAL))
@@ -297,7 +316,7 @@ void UpdateCoinsAndStars()
                 gameState.score += 750;
             }
             
-            Play::PlayAudio("collect");
+            // Play::PlayAudio("collect");
         }
 
         Play::UpdateGameObject(obj_coin);
@@ -356,7 +375,7 @@ void UpdateLasers()
             {
                 hasCollided = true;
                 obj_coin.type = TYPE_DESTROYED;
-                Play::PlayAudio("error");
+                // Play::PlayAudio("error");
                 gameState.score -= 300;
             }
         }
@@ -572,8 +591,6 @@ void SaveScore(GameState gameState)
     allScores.push_back(currentScore);
     sort(allScores.begin(), allScores.end(), greater<int>());
 
-    // TODO: Add a limit to number of scores saved??????
-
     ofstream outputLeaderboardFile("leaderboard.txt");
 
     if (!outputLeaderboardFile.is_open())
@@ -671,10 +688,6 @@ void UpdatePowerUp(float elapsedTime)
 
     bool hasCollided = false;
 
-    // In javascript, theres like a substitute ? that is a simplified if else
-    // Does something similar work in C++ and if so, how to implement and would the below if-else require it?
-    // As long as there is not already a money bag on screen, then one can be spawned.
-
     if (vPowerUps.size() != 1 && !isPowerUpActive)
     {
         if (Play::RandomRoll(500) == 1)
@@ -682,12 +695,13 @@ void UpdatePowerUp(float elapsedTime)
             int id_money = Play::CreateGameObject(TYPE_POWERUP, obj_fan.pos, 20, "money");
             GameObject& obj_powerup = Play::GetGameObject(id_money);
             obj_powerup.velocity = { -6, 0 };
+            obj_powerup.velocity.x -= (matchDuration * 0.2);
             obj_powerup.rotSpeed = 0.1f;
         }
     }
     else
     {
-        if (Play::RandomRoll(100) == 1 && isPowerUpActive)
+        if (Play::RandomRoll(20) == 1 && isPowerUpActive)
         {
             int id_coin = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 20, "coin");
             GameObject& obj_coin = Play::GetGameObject(id_coin);
@@ -714,9 +728,8 @@ void UpdatePowerUp(float elapsedTime)
             }
 
             hasCollided = true;
-            Play::PlayAudio("collect");
+            // Play::PlayAudio("collect");
 
-            // What happens when it gets picked up
             isPowerUpActive = true;
         }
 
@@ -764,7 +777,6 @@ void ShowShopMenu()
     int punchThroughCost = 1000;
     int invincibilityCost = 5000;
 
-    // If pressed key_s, game pauses and shop opens
     Play::DrawFontText("72px", "Shop",
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 7/8 }, Play::CENTRE);
 
@@ -773,14 +785,105 @@ void ShowShopMenu()
 
     Play::DrawFontText("32px", "1. Shooting Speed: +" + to_string(shootingSpeedCost),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 4/8 }, Play::CENTRE);
+
     Play::DrawFontText("32px", "2. Punch Through: +" + to_string(punchThroughCost),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 3/8 }, Play::CENTRE);
+
     Play::DrawFontText("32px", "3. Invincibility (temporary): " + to_string(invincibilityCost),
                        { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 2/8 }, Play::CENTRE);
 
-    if (Play::KeyPressed(Play::KEY_S))
+    Play::DrawFontText("32px", "Press \"c\" to continue",
+                       { DISPLAY_WIDTH * 1/16, DISPLAY_HEIGHT * 1/16 }, Play::LEFT);
+
+    if (Play::KeyPressed(Play::KEY_C))
     {
         gameState.mode = MODE_PLAYING;
+    }
+}
+
+void DrawProgressBar(float& matchDuration, Point2D bottomLeftCorner, float barThickness, float barLength, bool showPercentage)
+{
+    // Bar Outline -1 to the starting point due to pixel padding
+    Play::DrawRect({ bottomLeftCorner.x - 1, bottomLeftCorner.y - 1 }, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cGrey);
+
+    // Had to add .0f to 1000 and 60 to ensure that it incremented correctly. When it was not there, causeed the bar to require ~65sec to be 100%
+    float progress = matchDuration * (barLength / 60.0f);
+
+    if (progress <= barLength && showPercentage)
+    {
+        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, cBlue, true);
+
+        float percentage = progress / barLength * 100;
+
+        stringstream percentFormat;
+        percentFormat << fixed << setprecision(2) << percentage;
+
+        Play::DrawFontText("32px", percentFormat.str() + "%",
+                           { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
+    }
+    else
+    {
+        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cBlue, true);
+
+        if (showPercentage)
+        {
+            Play::DrawFontText("32px", "100%",
+                               { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
+        }
+    }
+}
+
+void UpdateLevel(float elapsedTime)
+{
+    float levelDuration = 60.0f;
+    float percentLevelComplete = 0.0f;
+    
+    gameState.progress += elapsedTime;
+
+    if (gameState.progress > levelDuration)
+    {
+        // Level 1 complete
+        gameState.mode = MODE_LEVELCOMPLETE;
+        gameState.currentLevel++;
+        gameState.progress = 0.0f;
+    }
+    else
+    {
+        percentLevelComplete = gameState.progress / levelDuration * 100;
+        stringstream percentFormat;
+        percentFormat << fixed << setprecision(2) << percentLevelComplete;
+        Play::DrawFontText("32px", "Level " + to_string(gameState.currentLevel) + ": " + percentFormat.str() + "%",
+                           { DISPLAY_WIDTH * 2/16 , DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
+    }
+}
+
+void ShowLevelCompleteMenu()
+{
+    Play::DrawFontText("72px", "Level " + to_string(gameState.currentLevel - 1) + " complete!",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
+
+    gameState.score + 5000;
+
+    Play::DrawFontText("32px", "You have been awareded 5000 points: " + to_string(gameState.score),
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 6 / 8 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Press \"c\" to continue",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 4 / 8 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "Press \"s\" for shop",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 3 / 8 }, Play::CENTRE);
+
+    Play::DrawFontText("32px", "\"ESC\" quit game (WARNING: lose all progress)",
+                       { DISPLAY_WIDTH / 2, DISPLAY_HEIGHT * 2 / 8 }, Play::CENTRE);
+
+    if (Play::KeyPressed(Play::KEY_C))
+    {
+        gameState.mode = MODE_PLAYING;
+    }
+
+    if (Play::KeyPressed(Play::KEY_S))
+    {
+        gameState.mode = MODE_SHOP;
     }
 }
 
