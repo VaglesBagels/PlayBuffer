@@ -74,7 +74,7 @@ void ResetGameState();
 void UpdatePowerUp(float elapsedTime);
 void ShowShopMenu();
 void UpdateLevel(float elapsedTime);
-void DrawProgressBar(float& matchDuration, Point2D bottomLeftCorner, float barThickness, float barLength, bool showPercentage = false);
+void DrawProgressBar(float barDuration, Point2D bottomLeftCorner, float barThickness, float barLength);
 void ShowLevelCompleteMenu();
 
 // The entry point for a PlayBuffer program 
@@ -761,7 +761,9 @@ void UpdatePowerUp(float elapsedTime)
     {
         powerUpTimer += elapsedTime;
 
-        Play::DrawDebugText({ 50, 50 }, to_string(powerUpTimer).c_str());
+        DrawProgressBar(powerUpTimer, { 50, 50 }, 25, 200);
+
+        // Play::DrawDebugText({ 50, 50 }, to_string(powerUpTimer).c_str());
 
         if (powerUpTimer >= powerUpDuration)
         {
@@ -801,35 +803,20 @@ void ShowShopMenu()
     }
 }
 
-void DrawProgressBar(float& matchDuration, Point2D bottomLeftCorner, float barThickness, float barLength, bool showPercentage)
+void DrawProgressBar(float barDuration, Point2D bottomLeftCorner, float barThickness, float barLength)
 {
     // Bar Outline -1 to the starting point due to pixel padding
     Play::DrawRect({ bottomLeftCorner.x - 1, bottomLeftCorner.y - 1 }, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cGrey);
 
+    // This section for bar to countdown -- potentially add a bool value to see if the bar needs to be counted up or down
+    float remainingTime = powerUpDuration - barDuration;
+
     // Had to add .0f to 1000 and 60 to ensure that it incremented correctly. When it was not there, causeed the bar to require ~65sec to be 100%
-    float progress = matchDuration * (barLength / 60.0f);
+    float progress = remainingTime * (barLength / powerUpDuration);
 
-    if (progress <= barLength && showPercentage)
+    if (progress >= 0)
     {
-        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, cBlue, true);
-
-        float percentage = progress / barLength * 100;
-
-        stringstream percentFormat;
-        percentFormat << fixed << setprecision(2) << percentage;
-
-        Play::DrawFontText("32px", percentFormat.str() + "%",
-                           { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
-    }
-    else
-    {
-        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cBlue, true);
-
-        if (showPercentage)
-        {
-            Play::DrawFontText("32px", "100%",
-                               { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
-        }
+        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, cMagenta, true);
     }
 }
 
@@ -902,3 +889,36 @@ void ShowLevelCompleteMenu()
 *   - 2D movement
 *   - Different orientation
 */
+
+// This function causes the progress bar to go up to 100% starting from match duration
+//void DrawProgressBar(float& matchDuration, Point2D bottomLeftCorner, float barThickness, float barLength, bool showPercentage)
+//{
+//    // Bar Outline -1 to the starting point due to pixel padding
+//    Play::DrawRect({ bottomLeftCorner.x - 1, bottomLeftCorner.y - 1 }, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cGrey);
+//
+//    // Had to add .0f to 1000 and 60 to ensure that it incremented correctly. When it was not there, causeed the bar to require ~65sec to be 100%
+//    float progress = matchDuration * (barLength / 60.0f);
+//
+//    if (progress <= barLength && showPercentage)
+//    {
+//        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, cBlue, true);
+//
+//        float percentage = progress / barLength * 100;
+//
+//        stringstream percentFormat;
+//        percentFormat << fixed << setprecision(2) << percentage;
+//
+//        Play::DrawFontText("32px", percentFormat.str() + "%",
+//                           { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
+//    }
+//    else
+//    {
+//        Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + barLength, bottomLeftCorner.y + barThickness }, cBlue, true);
+//
+//        if (showPercentage)
+//        {
+//            Play::DrawFontText("32px", "100%",
+//                               { barLength / 2, DISPLAY_HEIGHT * 7 / 8 }, Play::CENTRE);
+//        }
+//    }
+//}
