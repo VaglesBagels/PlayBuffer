@@ -259,6 +259,7 @@ void UpdateTools()
 {
     GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
     std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
+    bool hasCollided = false;
 
     for (int id : vTools)
     {
@@ -270,6 +271,13 @@ void UpdateTools()
             Play::PlayAudio("die");
             gameState.agentState = STATE_DEAD;
         }
+
+        if (Play::IsColliding(obj_tool, obj_agent8) && isInvincible)
+        {
+            gameState.score += 100;
+            hasCollided = true;
+        }
+
         Play::UpdateGameObject(obj_tool);
 
         if (Play::IsLeavingDisplayArea(obj_tool, Play::VERTICAL))
@@ -279,7 +287,7 @@ void UpdateTools()
         }
         Play::DrawObjectRotated(obj_tool);
 
-        if (!Play::IsVisible(obj_tool))
+        if (!Play::IsVisible(obj_tool) || hasCollided)
         {
             Play::DestroyGameObject(id);
         }
