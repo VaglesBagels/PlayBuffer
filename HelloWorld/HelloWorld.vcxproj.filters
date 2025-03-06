@@ -14,10 +14,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\PlayBuffer\Play.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Tool.h">
+    <ClInclude Include="..\Play.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
