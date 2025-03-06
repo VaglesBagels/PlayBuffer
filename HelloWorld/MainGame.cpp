@@ -228,14 +228,14 @@ void UpdateFan(float& matchDuration)
         int id = Play::CreateGameObject(TYPE_TOOL, obj_fan.pos, 50, "driver");
         GameObject& obj_tool = Play::GetGameObject(id);
         obj_tool.velocity = Point2f(-8, Play::RandomRollRange(-1, 1) * 6);
-        obj_tool.velocity.x -= (matchDuration * 0.1);
+        obj_tool.velocity.x -= (matchDuration * 0.1f);
 
         if (Play::RandomRoll(2) == 1)
         {
             Play::SetSprite(obj_tool, "spanner", 0);
             obj_tool.radius = 100;
             obj_tool.velocity.x = -4;
-            obj_tool.velocity.x -= (matchDuration * 0.1);
+            obj_tool.velocity.x -= (matchDuration * 0.1f);
             obj_tool.rotSpeed = 0.1f;
         }
         // Play::PlayAudio("tool");
@@ -246,7 +246,7 @@ void UpdateFan(float& matchDuration)
         int id = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 40, "coin");
         GameObject& obj_coin = Play::GetGameObject(id);
         obj_coin.velocity = { -3, 0 };
-        obj_coin.velocity.x -= (matchDuration * 0.1);
+        obj_coin.velocity.x -= (matchDuration * 0.1f);
         obj_coin.rotSpeed = 0.1f;
     }
 
@@ -297,8 +297,6 @@ void UpdateTools()
             Play::DestroyGameObject(id);
         }
     }
-
-
 }
 
 void UpdateCoinsAndStars()
@@ -388,7 +386,7 @@ void UpdateLasers()
             {
                 int id_explosion = Play::CreateGameObject(TYPE_EXPLOSIONS, obj_tool.pos, 30, "explosion");
                 GameObject& obj_explosion = Play::GetGameObject(id_explosion);
-                Play::SetSprite(obj_explosion, "explosions", 0.1);
+                Play::SetSprite(obj_explosion, "explosions", 0.1f);
                 obj_explosion.velocity = { 0, 0 };
                 obj_explosion.rotSpeed = 0.1f;
 
@@ -569,8 +567,6 @@ void ShowGameOver()
 
                        { DISPLAY_WIDTH * 1/8, 40 }, Play::CENTRE);
 
-    GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
-
     if (Play::KeyPressed(Play::KEY_R) == true)
     {
         ResetGameState();
@@ -727,7 +723,7 @@ void UpdatePowerUp(float elapsedTime)
             int id_money = Play::CreateGameObject(TYPE_POWERUP, obj_fan.pos, 20, "money");
             GameObject& obj_powerup = Play::GetGameObject(id_money);
             obj_powerup.velocity = { -6, 0 };
-            obj_powerup.velocity.x -= (matchDuration * 0.1);
+            obj_powerup.velocity.x -= (matchDuration * 0.1f);
             obj_powerup.rotSpeed = 0.1f;
         }
     }
@@ -737,7 +733,7 @@ void UpdatePowerUp(float elapsedTime)
         {
             int id_coin = Play::CreateGameObject(TYPE_COIN, obj_fan.pos, 20, "coin");
             GameObject& obj_coin = Play::GetGameObject(id_coin);
-            Play::SetSprite(obj_coin, "coins", 0.1);
+            Play::SetSprite(obj_coin, "coins", 0.1f);
             obj_coin.velocity = { -10, 0 };
             obj_coin.rotSpeed = 0.1f;
         }
