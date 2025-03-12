@@ -1,34 +1,20 @@
 #pragma once
 
-#define PLAY_IMPLEMENTATION
-#define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
-
-#include "MainGame.cpp"
-
-
-class Tool 
+class Tool
 {
 public:
-	// Constructor
-	Tool(Play::Point2f position, int collisionRadius, const char* spriteName)
-		: pos(position)
-		, radius(collisionRadius)
-		, sprite(spriteName)
-	{
-		id = Play::CreateGameObject(TYPE_TOOL, pos, radius, sprite);
-	}
+	Tool();
+	virtual ~Tool() {}
 
-	// Destructor
-	~Tool()
-	{
-		Play::DestroyGameObject(id);
-	}
+	static void SpawnTools(Play::GameObject& obj_fan, bool isPowerUpActive, float matchDuration);
+	void HandleCollisions(Play::GameObject& obj_tool, Play::GameObject& obj_agent8, bool isInvincible);
+	void HandleDeconstruction(Play::GameObject& obj_tool, int id);
+	void HandleDisplayArea(Play::GameObject& obj_tool);
+
+	static void Update();
 
 private:
-	// Private variables and functions
-	int id = 0;
-	Play::Point2f pos;
-	int radius;
-	const char *sprite;
+
+	bool hasCollided;
 };
+

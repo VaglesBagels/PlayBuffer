@@ -190,13 +190,28 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CoinStar.cpp" />
+    <ClCompile Include="Driver.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameUI.cpp" />
+    <ClCompile Include="Lasers.cpp" />
+    <ClCompile Include="LeaderBoard.cpp" />
     <ClCompile Include="MainGame.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Spanner.cpp" />
+    <ClCompile Include="Tool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Play.h" />
+    <ClInclude Include="CoinStar.h" />
+    <ClInclude Include="Driver.h" />
+    <ClInclude Include="Game.h" />
+    <ClInclude Include="GameUI.h" />
+    <ClInclude Include="Lasers.h" />
+    <ClInclude Include="LeaderBoard.h" />
+    <ClInclude Include="Spanner.h" />
     <ClInclude Include="Tool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
