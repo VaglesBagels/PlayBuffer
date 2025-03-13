@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Play.h"
+
 class Lasers
 {
 public:
