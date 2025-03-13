@@ -49,3 +49,48 @@ void Lasers::HandleDeconstruction(Play::GameObject& obj_laser, int id)
         Play::DestroyGameObject(id);
     }
 }
+
+void Lasers::Update()
+{
+    std::vector<int> vLasers = Play::CollectGameObjectIDsByType(TYPE_LASER);
+    std::vector<int> vTools = Play::CollectGameObjectIDsByType(TYPE_TOOL);
+    std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
+    std::vector<int> vExplosions = Play::CollectGameObjectIDsByType(TYPE_EXPLOSIONS);
+
+    std::vector<Lasers> lasers;
+
+    // Like Coins, this is a vector of laser id with each new laser having its own instance
+    // This allows the remaining functionality to work independently
+    for (int id_laser : vLasers)
+    {
+        lasers.emplace_back();
+    }
+
+    for (int i = 0; i < vLasers.size(); i++)
+    {
+        Play::GameObject& obj_laser = Play::GetGameObject(vLasers[i]);
+        bool hasCollided = false;
+
+        for (int id_tool : vTools)
+        {
+            Play::GameObject& obj_tool = Play::GetGameObject(id_tool);
+            lasers[i].HandleExplosiveShot(obj_laser, obj_tool, id_tool, gameState.isExplosive);
+        }
+
+        for (int id_coin : vCoins)
+        {
+            Play::GameObject& obj_coin = Play::GetGameObject(id_coin);
+            lasers[i].HandleCoinCollision(obj_laser, obj_coin);
+        }
+
+        if (gameState.score < 0)
+        {
+            gameState.score = 0;
+        }
+
+        Play::UpdateGameObject(obj_laser);
+        Play::DrawObject(obj_laser);
+
+        lasers[i].HandleDeconstruction(obj_laser, vLasers[i]);
+    }
+}

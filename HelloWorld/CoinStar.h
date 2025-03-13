@@ -13,6 +13,8 @@ public:
     void HandleCollision(Play::GameObject& obj_coin, Play::GameObject& obj_agent8, bool isPowerUpActive);
     void HandleDeconstruction(Play::GameObject& obj_coin, int id);
 
+    static void Update();
+
 private:
     bool hasCollided;
 };

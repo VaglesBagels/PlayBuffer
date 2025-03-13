@@ -56,3 +56,41 @@ void Game::DrawProgressBar(float barDuration, float totalDuration, Play::Point2D
         Play::DrawRect(bottomLeftCorner, { bottomLeftCorner.x + progress, bottomLeftCorner.y + barThickness }, colour, true);
     }
 }
+
+void Game::UpdatePassiveUpgrades(float elapsedTime, int DISPLAY_HEIGHT)
+{
+    if (gameState.mode != MODE_SHOP && gameState.isInvincible)
+    {
+        gameState.invincibleTimer += elapsedTime;
+
+        Game::DrawProgressBar(gameState.invincibleTimer, gameState.invincibleDuration, { 50, DISPLAY_HEIGHT * 5 / 8 }, 25, 200, Play::cCyan);
+
+        if (gameState.invincibleTimer > gameState.invincibleDuration)
+        {
+            gameState.invincibleTimer = 0.0f;
+            gameState.isInvincible = false;
+        }
+    }
+}
+
+void Game::UpdateDestroyed()
+{
+    std::vector<int> vDead = Play::CollectGameObjectIDsByType(TYPE_DESTROYED);
+
+    for (int id_dead : vDead)
+    {
+        Play::GameObject& obj_dead = Play::GetGameObject(id_dead);
+        obj_dead.animSpeed = 0.2f;
+        Play::UpdateGameObject(obj_dead);
+
+        if (obj_dead.frame % 2)
+        {
+            Play::DrawObjectRotated(obj_dead, (10 - obj_dead.frame) / 10.0f);
+        }
+
+        if (!Play::IsVisible(obj_dead) || obj_dead.frame >= 10)
+        {
+            Play::DestroyGameObject(id_dead);
+        }
+    }
+}

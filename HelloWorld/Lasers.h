@@ -8,6 +8,8 @@ public:
 	void HandleCoinCollision(Play::GameObject& obj_laser, Play::GameObject& obj_coin);
 	void HandleDeconstruction(Play::GameObject& obj_laser, int id);
 
+	static void Update();
+
 private:
 	bool hasCollided;
 };

@@ -190,8 +190,11 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Agent8.cpp" />
     <ClCompile Include="CoinStar.cpp" />
     <ClCompile Include="Driver.cpp" />
+    <ClCompile Include="Explosion.cpp" />
+    <ClCompile Include="Fan.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="Lasers.cpp" />
@@ -200,17 +203,22 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="PowerUp.cpp" />
     <ClCompile Include="Spanner.cpp" />
     <ClCompile Include="Tool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Play.h" />
+    <ClInclude Include="Agent8.h" />
     <ClInclude Include="CoinStar.h" />
     <ClInclude Include="Driver.h" />
+    <ClInclude Include="Explosion.h" />
+    <ClInclude Include="Fan.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameUI.h" />
     <ClInclude Include="Lasers.h" />
     <ClInclude Include="LeaderBoard.h" />
+    <ClInclude Include="PowerUp.h" />
     <ClInclude Include="Spanner.h" />
     <ClInclude Include="Tool.h" />
   </ItemGroup>

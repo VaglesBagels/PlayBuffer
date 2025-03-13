@@ -60,3 +60,45 @@ void Coin::HandleDeconstruction(Play::GameObject& obj_coin, int id)
     }
 }
 
+void Coin::Update()
+{
+    Play::GameObject& obj_fan = Play::GetGameObjectByType(TYPE_FAN);
+    Play::GameObject& obj_agent8 = Play::GetGameObjectByType(TYPE_AGENT8);
+    std::vector<int> vCoins = Play::CollectGameObjectIDsByType(TYPE_COIN);
+
+    Coin::SpawnCoins(obj_fan, gameState.isPowerUpActive, gameState.matchDuration);
+
+    std::vector<Coin> coins;
+
+    for (int id_coin : vCoins)
+    {
+        // Found this, creates a new coin for each generate coin object
+        coins.emplace_back();
+    }
+
+    for (int i = 0; i < vCoins.size(); i++)
+    {
+        Play::GameObject& obj_coin = Play::GetGameObject(vCoins[i]);
+
+        coins[i].HandleCollision(obj_coin, obj_agent8, gameState.isPowerUpActive);
+        Play::UpdateGameObject(obj_coin);
+        Play::DrawObjectRotated(obj_coin);
+        coins[i].HandleDeconstruction(obj_coin, vCoins[i]);
+    }
+
+    std::vector<int> vStars = Play::CollectGameObjectIDsByType(TYPE_STAR);
+
+    for (int id_star : vStars)
+    {
+        Play::GameObject& obj_star = Play::GetGameObject(id_star);
+
+        Play::UpdateGameObject(obj_star);
+        Play::DrawObjectRotated(obj_star);
+
+        if (!Play::IsVisible(obj_star))
+        {
+            Play::DestroyGameObject(id_star);
+        }
+    }
+}
+
