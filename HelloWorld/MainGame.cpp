@@ -1,22 +1,20 @@
 #define PLAY_IMPLEMENTATION
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "Tool.h"
-#include "Driver.h"
-#include "Spanner.h"
-#include "CoinStar.h"
-#include "Lasers.h"
-#include "GameUI.h"
-#include "Game.h"
-#include "Fan.h"
 #include "Agent8.h"
-#include "PowerUp.h"
-#include "GameState.h"
-#include "GameObjectType.h"
+#include "CoinStar.h"
+#include "Driver.h"
 #include "Explosion.h"
-
-extern std::vector<std::unique_ptr<Tool>> toolInstances;
+#include "Fan.h"
+#include "Game.h"
+#include "GameObjectType.h"
+#include "GameState.h"
+#include "GameUI.h"
+#include "Lasers.h"
+#include "Play.h"
+#include "PowerUp.h"
+#include "Spanner.h"
+#include "Tool.h"
 
 int DISPLAY_WIDTH = 1280;
 int DISPLAY_HEIGHT = 720;
@@ -106,8 +104,3 @@ int MainGameExit( void )
 	Play::DestroyManager();
 	return PLAY_OK;
 }
-
-// Notes::
-/*
-* Need to update leaderboard intake to take in the level and score
-*/
