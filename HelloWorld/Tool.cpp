@@ -1,10 +1,11 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
-#include "Tool.h"
-#include "GameState.h"
-#include "GameObjectType.h"
+
 #include "Driver.h"
+#include "GameObjectType.h"
+#include "GameState.h"
+#include "Play.h"
 #include "Spanner.h"
+#include "Tool.h"
 #include <memory>
 
 // Need to use unique_pointer - enforces one pointer for each tool especially from derived classes spanner and driver

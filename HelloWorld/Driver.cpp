@@ -1,11 +1,11 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "Tool.h"
-#include "GameState.h"
-#include "GameObjectType.h"
-#include "Spanner.h"
 #include "Driver.h"
+#include "GameObjectType.h"
+#include "GameState.h"
+#include "Play.h"
+#include "Spanner.h"
+#include "Tool.h"
 
 Driver::Driver(Play::GameObject& obj_fan, float matchDuration)
 {

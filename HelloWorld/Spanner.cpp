@@ -1,10 +1,10 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "Tool.h"
-#include "GameState.h"
 #include "GameObjectType.h"
+#include "GameState.h"
+#include "Play.h"
 #include "Spanner.h"
+#include "Tool.h"
 
 Spanner::Spanner(Play::GameObject& obj_tool, float matchDuration)
 {

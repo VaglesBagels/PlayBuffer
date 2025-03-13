@@ -1,10 +1,10 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "LeaderBoard.h"
-#include "GameState.h"
-#include "GameObjectType.h"
 #include "Game.h"
+#include "GameObjectType.h"
+#include "GameState.h"
+#include "LeaderBoard.h"
+#include "Play.h"
 
 void LeaderBoard::SaveScore()
 {

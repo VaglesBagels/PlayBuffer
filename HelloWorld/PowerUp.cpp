@@ -1,10 +1,10 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "PowerUp.h"
 #include "Game.h"
-#include "GameState.h"
 #include "GameObjectType.h"
+#include "GameState.h"
+#include "Play.h"
+#include "PowerUp.h"
 
 void PowerUp::Update(float elapsedTime)
 {

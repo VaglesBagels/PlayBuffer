@@ -1,9 +1,9 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "Lasers.h"
-#include "GameState.h"
 #include "GameObjectType.h"
+#include "GameState.h"
+#include "Lasers.h"
+#include "Play.h"
 
 Lasers::Lasers() : hasCollided(false)
 {

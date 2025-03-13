@@ -1,11 +1,11 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
-#include "GameUI.h"
-#include "GameState.h"
-#include "GameObjectType.h"
 #include "Game.h"
+#include "GameObjectType.h"
+#include "GameState.h"
+#include "GameUI.h"
 #include "LeaderBoard.h"
+#include "Play.h"
 
 GameUI::GameUI(int displayWidth, int displayHeight) : DISPLAY_WIDTH(displayWidth), DISPLAY_HEIGHT(displayHeight)
 {

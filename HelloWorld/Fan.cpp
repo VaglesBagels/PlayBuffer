@@ -1,9 +1,9 @@
 #define PLAY_USING_GAMEOBJECT_MANAGER
-#include "Play.h"
 
 #include "Fan.h"
-#include "GameState.h"
 #include "GameObjectType.h"
+#include "GameState.h"
+#include "Play.h"
 
 void Fan::SpawnFan()
 {
